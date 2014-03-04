@@ -1,9 +1,6 @@
 <?php 
 /*
  * Author: Gabriel Letarte
- *
- * This class is made in order to replace the Laravel Paginator when using Eloquent ORM outside of
- * Laravel.
  * 
 */
 class EloquentPaginator{
@@ -26,9 +23,14 @@ class EloquentPaginator{
 	 * Public API
 	**********************************************************************************************/
 	
+	/**
+	 * @param query:     Eloquent query or Fluent query.
+	 * @param pageAt:    The current page you want to visualize.
+	 * @param navFormat: The link to the next page with @page@ being the page number.
+	*/
 	public static function paginate($query, $pageAt = 1, $navFormat = null){
 		$paginator = new EloquentPaginator();
-		$paginator->doPaginate($query, $pageAt = 1, $navFormat = null);
+		$paginator->doPaginate($query, $pageAt, $navFormat = null);
 		return $paginator;
 	}
 
@@ -51,16 +53,15 @@ class EloquentPaginator{
 	**********************************************************************************************/
 	
 	private function doPaginate($query, $pageAt = 1, $linkFormat = null){
-	
+
 		//sanitize pageAt parameter
 		if (!is_numeric($pageAt)){
-			$pageAt = 1;
+			$pageAt = intval($pageAt);
 		}
 		
 		//Init
-		// $modelTable = $query->getGrammar()->getQuery()->from;//This line is a bit sketchy
 		if ($linkFormat === null || !is_string($linkFormat)){
-			$linkFormat = self::getDefaultUrlFormat();
+			$this->linkFormat = self::getDefaultUrlFormat();
 		}
 		$this->pageAt = $pageAt;
 		$this->query = $query;
@@ -141,7 +142,12 @@ class EloquentPaginator{
 			$pageURL .= $_SERVER["SERVER_NAME"].$_SERVER["REQUEST_URI"];
 		}
 		
-		$pageURL = rtrim($pageURL, '/').'/'.self::PAGE_REPLACE;
+		$pageURL = rtrim($pageURL, '/');
+		//Remove the last occurence of page/{number}
+		if (preg_match('/\/page\/[0-9]{1,}/', $pageURL, $match) !== 0){
+			$pageURL = substr($pageURL, 0 ,strrpos($pageURL, $match[0]));
+		}
+		$pageURL = $pageURL.'/page/'.self::PAGE_REPLACE;
 		
 		return $pageURL;
 	}
