@@ -5,11 +5,16 @@
 */
 class EloquentPaginator{
 
-	const PAGE_REPLACE = '@page@';
+	const PAGE_REPLACE 	= '@page@';
+	const URL_NEXT 		= 'Next >';
+	const URL_PREVIOUS 	= '< Previous';
 
 	//To be initialize after query
 	public $results = array();	//Results on the currents page
 	public $navigation = '';	//Urls to navigate other pages
+	public $navNext = '';			//Url to navigate to the next page
+	public $navPrevious = '';		//Url to navigate to the previous
+	
 	public $pageAt = 1;			//Page at
 	public $nbPages;			//Number of pages total
 	
@@ -76,6 +81,8 @@ class EloquentPaginator{
 		//Pagination
 		$this->results = $this->getOneDataPage();
 		$this->navigation = $this->createNavigation();
+		$this->navPrevious = $this->createUrlPrevious();
+		$this->navNext = $this->createUrlNext();
 	}
 	
 	/**
@@ -118,7 +125,36 @@ class EloquentPaginator{
 		}
 		
 		$links .= '</nav>';
+		
 		return $links;
+	}
+	
+	/**
+	 * Return a url to navigate to the previous page.
+	 * Will return '' if at page 1
+	*/
+	private function createUrlPrevious(){
+		$url = '';
+		if ($this->pageAt != 1){
+			$url .= '<a href="'.
+				str_replace(self::PAGE_REPLACE, $this->pageAt - 1, $this->linkFormat).
+				'">'.self::URL_PREVIOUS.'</a>';
+		}
+		return $url;
+	}
+	
+	/**
+	 * Return a url to navigate to the previous page.
+	 * Will return '' if at last page
+	*/
+	private function createUrlNext(){
+		$url = '';
+		if ($this->pageAt != $this->nbPages){
+			$url .= '<a href="'.
+				str_replace(self::PAGE_REPLACE, $this->pageAt + 1, $this->linkFormat).
+				'">'.self::URL_NEXT.'</a>';
+		}
+		return $url;
 	}
 	
 	/**
