@@ -34,6 +34,9 @@ class EloquentPaginator{
 	 * @param navFormat: The link to the next page with @page@ being the page number.
 	*/
 	public static function paginate($query, $pageAt = 1, $navFormat = null){
+		if (!is_numeric($pageAt)){
+			$pageAt = 1;
+		}
 		$paginator = new EloquentPaginator();
 		$paginator->doPaginate($query, $pageAt, $navFormat = null);
 		return $paginator;
