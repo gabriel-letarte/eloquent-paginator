@@ -79,6 +79,9 @@ class EloquentPaginator{
 		$this->nbPages = $this->getNumberOfPages();
 		if ($this->pageAt > $this->nbPages){
 			$this->pageAt = $this->nbPages - 1;
+			if ($this->pageAt == 0){
+				$this->pageAt = 1;
+			}
 		}
 		
 		//Pagination
@@ -110,6 +113,12 @@ class EloquentPaginator{
 	*/
 	private function createNavigation(){
 		$links = '<nav class="capsulePagination">';
+		
+		//Determine where we start if there are more links than we can display
+		// if ($this->nbPages > $this->maxNavigationLinks){
+			// $offset = $this->pageAt - floor($this->maxNavigationLinks / 2);
+			// if ($offset - 
+		// }
 		
 		$i=1;
 		while ($i <= $this->nbPages && $i <= $this->maxNavigationLinks){
