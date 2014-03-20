@@ -88,9 +88,9 @@ class EloquentPaginator{
 		$this->nbPages = $this->getNumberOfPages();
 		if ($this->pageAt > $this->nbPages){
 			$this->pageAt = $this->nbPages - 1;
-			if ($this->pageAt == 0){
-				$this->pageAt = 1;
-			}
+		}
+		if ($this->pageAt <= 0){
+			$this->pageAt = 1;
 		}
 		
 		//Pagination
