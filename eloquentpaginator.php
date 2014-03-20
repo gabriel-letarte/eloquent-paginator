@@ -38,7 +38,7 @@ class EloquentPaginator{
 			$pageAt = 1;
 		}
 		$paginator = new EloquentPaginator();
-		$paginator->doPaginate($query, $pageAt, $navFormat = null);
+		$paginator->doPaginate($query, $pageAt, $navFormat);
 		return $paginator;
 	}
 
@@ -62,15 +62,24 @@ class EloquentPaginator{
 	
 	private function doPaginate($query, $pageAt = 1, $linkFormat = null){
 
-		//sanitize pageAt parameter
+		//sanitize pageAt and linkFormat parameters
 		if (!is_numeric($pageAt)){
 			$pageAt = intval($pageAt);
 		}
+		if (!is_string($linkFormat)){
+			//Not 100% safe but it is supposed to be used internally by your application.
+			$linkFormat = null;
+		}
 		
-		//Init
-		if ($linkFormat === null || !is_string($linkFormat)){
+		//Initialize link format
+		if ($linkFormat === null){
 			$this->linkFormat = self::getDefaultUrlFormat();
 		}
+		else{
+			$this->linkFormat = self::getSpecifiedUrlFormat($linkFormat);
+		}
+		
+		//Init
 		$this->pageAt = $pageAt;
 		$this->query = $query;
 		
@@ -108,20 +117,36 @@ class EloquentPaginator{
 			->get();
 	}
 	
+	/* ========================================================================================== */
+	/* Navigation Management */
+	/* ========================================================================================== */
+	
 	/**
 	 * @return: a HTML div containing the URLs to navigate this pagination
 	*/
 	private function createNavigation(){
+		
+		//Determine where we start.
+		//If pageAt < $leftBracketThreshold, navigation will start from 1.
+		//If pageAt > $rightBracketThreshold, navigation will end at nbPages.
+		//Else, pageAt will be at the middle of the navigation.
+		$leftBracketThreshold = ceil($this->maxNavigationLinks / 2);
+		$rightBracketThreshold = $this->nbPages - $leftBracketThreshold;
+		
+		if ($this->pageAt < $leftBracketThreshold){
+			$startAt = 1;
+		}
+		else if ($this->pageAt > $rightBracketThreshold){
+			$startAt = $this->nbPages - $this->maxNavigationLinks;
+		}
+		else{
+			$startAt = $this->pageAt - ceil($this->maxNavigationLinks / 2);
+		}
+		
+		//Create the navigation
 		$links = '<nav class="capsulePagination">';
-		
-		//Determine where we start if there are more links than we can display
-		// if ($this->nbPages > $this->maxNavigationLinks){
-			// $offset = $this->pageAt - floor($this->maxNavigationLinks / 2);
-			// if ($offset - 
-		// }
-		
-		$i=1;
-		while ($i <= $this->nbPages && $i <= $this->maxNavigationLinks){
+		$i = $startAt;
+		while ($i <= $this->nbPages && $i <= $this->maxNavigationLinks + $startAt){
 			if ($i == $this->pageAt){
 				$links .= '<b>'.$i.'</b>';
 			}
@@ -130,12 +155,11 @@ class EloquentPaginator{
 			}
 			
 			//Happend '-' between each page links
-			if ($i != $this->nbPages && $i <= $this->maxNavigationLinks - 1){
+			if ($i != $this->nbPages + $startAt && $i <= $this->maxNavigationLinks - 1 + $startAt){
 				$links .= ' - ';
 			}
 			$i++;
 		}
-		
 		$links .= '</nav>';
 		
 		return $links;
@@ -169,12 +193,69 @@ class EloquentPaginator{
 		return $url;
 	}
 	
+	/* ========================================================================================== */
+	/* URL Management */
+	/* ========================================================================================== */
+	
 	/**
 	 * @return: the current url + '/PAGE_REPLACE'
 	 * http://webcheatsheet.com/php/get_current_page_url.php
 	*/
 	private static function getDefaultUrlFormat() {
+		
+		$pageURL = self::getCurrentURL();
+		
+		//Remove the last occurence of page/{number}
+		//(for when the default URL format is in use)
+		if (preg_match('/\/page\/[0-9]{1,}/', $pageURL, $match) !== 0){
+			$pageURL = substr($pageURL, 0 ,strrpos($pageURL, $match[0]));
+		}
+		$pageURL = $pageURL.'/page/'.self::PAGE_REPLACE;
+		
+		return $pageURL;
+	}
 	
+	private static function getSpecifiedUrlFormat($linkFormat){
+
+		//Get the portion of URL before the PAGE_REPLACE and the portion after
+		$beforePageParameter = substr(
+			$linkFormat, 
+			0, 
+			strpos($linkFormat, self::PAGE_REPLACE));
+		
+		$afterPageParameter = substr(
+			$linkFormat, 
+			strpos($linkFormat, self::PAGE_REPLACE) + strlen(self::PAGE_REPLACE)
+			);
+
+		//Get the current page URL.
+		//If present, remove everything after $beforePageParameter
+		//Add the PAGE_REPLACE
+		//add the $afterPageParameter
+		//
+		//e.g
+		//    $linkFormat:           "/news/@page@"
+		//    $pageURL:              "website.com/news/2"
+		//    $beforePageParameter:  "/news/"
+		//    afterPageParameter:    false
+		//    
+		//    After this, $pageURL will be "website.com/news/@page@"
+		$pageURL = self::getCurrentURL();
+		if (strpos($pageURL, $beforePageParameter) !== false){
+			$pageURL = substr($pageURL, 0, strpos($pageURL, $beforePageParameter));
+		}	
+		$pageURL = $pageURL.$beforePageParameter.self::PAGE_REPLACE.'/';
+		if ($afterPageParameter){
+			$pageURL .= $afterPageParameter;
+		}
+		
+		return $pageURL;
+	}
+	
+	/**
+	 * @return: the current page URL
+	*/
+	private static function getCurrentURL(){
 		$pageURL = 'http';
 		
 		if (isset($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] == "on"){
@@ -191,11 +272,6 @@ class EloquentPaginator{
 		}
 		
 		$pageURL = rtrim($pageURL, '/');
-		//Remove the last occurence of page/{number}
-		if (preg_match('/\/page\/[0-9]{1,}/', $pageURL, $match) !== 0){
-			$pageURL = substr($pageURL, 0 ,strrpos($pageURL, $match[0]));
-		}
-		$pageURL = $pageURL.'/page/'.self::PAGE_REPLACE;
 		
 		return $pageURL;
 	}
