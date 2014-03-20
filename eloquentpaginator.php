@@ -244,7 +244,7 @@ class EloquentPaginator{
 		if (strpos($pageURL, $beforePageParameter) !== false){
 			$pageURL = substr($pageURL, 0, strpos($pageURL, $beforePageParameter));
 		}	
-		$pageURL = $pageURL.$beforePageParameter.self::PAGE_REPLACE.'/';
+		$pageURL = $pageURL.$beforePageParameter.self::PAGE_REPLACE;
 		if ($afterPageParameter){
 			$pageURL .= $afterPageParameter;
 		}
