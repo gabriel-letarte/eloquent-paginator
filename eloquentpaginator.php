@@ -104,7 +104,9 @@ class EloquentPaginator{
 	 * Get the total number of pages from this query
 	*/
 	private function getNumberOfPages(){
-		return ceil($this->query->count() / $this->perPage);
+		//We need to clone the query else the count() will break any select(...)
+		$tmp = clone $this->query;
+		return ceil($tmp->count() / $this->perPage);
 	}
 	
 	/**
