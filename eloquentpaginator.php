@@ -33,12 +33,13 @@ class EloquentPaginator{
 	 * @param pageAt:    The current page you want to visualize.
 	 * @param navFormat: The link to the next page with @page@ being the page number.
 	*/
-	public static function paginate($query, $pageAt = 1, $navFormat = null){
+	public static function paginate($query, $pageAt = 1, $navFormat = null,
+		                            $select_fields = array('*')){
 		if (!is_numeric($pageAt)){
 			$pageAt = 1;
 		}
 		$paginator = new EloquentPaginator();
-		$paginator->doPaginate($query, $pageAt, $navFormat);
+		$paginator->doPaginate($query, $pageAt, $navFormat, $select_fields);
 		return $paginator;
 	}
 
@@ -60,7 +61,7 @@ class EloquentPaginator{
 	 * Private methods
 	**********************************************************************************************/
 	
-	private function doPaginate($query, $pageAt = 1, $linkFormat = null){
+	private function doPaginate($query, $pageAt = 1, $linkFormat = null, $select_fields){
 
 		//sanitize pageAt and linkFormat parameters
 		if (!is_numeric($pageAt)){
@@ -94,7 +95,7 @@ class EloquentPaginator{
 		}
 		
 		//Pagination
-		$this->results = $this->getOneDataPage();
+		$this->results = $this->getOneDataPage($select_fields);
 		$this->navigation = $this->createNavigation();
 		$this->navPrevious = $this->createUrlPrevious();
 		$this->navNext = $this->createUrlNext();
@@ -112,11 +113,11 @@ class EloquentPaginator{
 	/**
 	 * Get one page of data from this query
 	*/
-	private function getOneDataPage(){
+	private function getOneDataPage($select_fields){
 		return $this->query
 			->skip(($this->pageAt - 1) * $this->perPage)
 			->take($this->perPage)
-			->get();
+			->get($select_fields);
 	}
 	
 	/* ========================================================================================== */
